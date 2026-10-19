@@ -2,11 +2,10 @@
 /**
  * Plugin Name: Branch Locator Map
  * Description: Multilingual branch locator with Google Maps and OpenStreetMap support. Use [branch_locator].
- * Version: 1.2.0
+ * Version: 1.2.1
  * Author: Shebas Khan
  * License: GPL-2.0-or-later
- * Text Domain: branch-locator
- * Domain Path: /languages
+ * Text Domain: branch-locator-map
  */
 
 if (!defined('ABSPATH')) {
@@ -54,7 +53,6 @@ function bl_locator_register_settings() {
 add_action('admin_init', 'bl_locator_register_settings');
 add_action('admin_menu', 'bl_locator_register_settings_menu');
 add_action('admin_enqueue_scripts', 'bl_locator_admin_assets');
-add_action('plugins_loaded', 'bl_locator_load_textdomain');
 
 function bl_locator_admin_assets($hook) {
     if ($hook !== 'settings_page_branch-locator-settings') {
@@ -62,14 +60,11 @@ function bl_locator_admin_assets($hook) {
     }
 
     wp_enqueue_media();
-    wp_enqueue_style('bl-leaflet', 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css', array(), '1.9.4');
-    wp_enqueue_style('bl-leaflet-draw', 'https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css', array('bl-leaflet'), '1.0.4');
-    wp_enqueue_script('bl-leaflet', 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js', array(), '1.9.4', false);
-    wp_enqueue_script('bl-leaflet-draw', 'https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js', array('bl-leaflet'), '1.0.4', false);
-}
-
-function bl_locator_load_textdomain() {
-    load_plugin_textdomain('branch-locator', false, dirname(plugin_basename(__FILE__)) . '/languages');
+    $asset_url = plugins_url('assets/vendor/leaflet/', __FILE__);
+    wp_enqueue_style('bl-leaflet', $asset_url . 'leaflet.css', array(), '1.9.4');
+    wp_enqueue_style('bl-leaflet-draw', $asset_url . 'leaflet.draw.css', array('bl-leaflet'), '1.0.4');
+    wp_enqueue_script('bl-leaflet', $asset_url . 'leaflet.js', array(), '1.9.4', false);
+    wp_enqueue_script('bl-leaflet-draw', $asset_url . 'leaflet.draw.js', array('bl-leaflet'), '1.0.4', false);
 }
 
 function bl_locator_default_map_settings() {
@@ -103,31 +98,31 @@ function bl_locator_sanitize_map_settings($settings) {
         : '';
 
     if (!in_array($provider, array('google', 'osm'), true)) {
-        add_settings_error('bl_locator_map_settings', 'invalid_map_provider', __('Choose either Google Maps or OpenStreetMap as the map provider.', 'branch-locator'));
+        add_settings_error('bl_locator_map_settings', 'invalid_map_provider', __('Choose either Google Maps or OpenStreetMap as the map provider.', 'branch-locator-map'));
         $provider = 'osm';
     }
     $invalid_center = ($center_lat !== null && ($center_lat < -90 || $center_lat > 90))
         || ($center_lng !== null && ($center_lng < -180 || $center_lng > 180));
     if ($invalid_center) {
-        add_settings_error('bl_locator_map_settings', 'invalid_map_center', __('Map center coordinates are out of range; enter a latitude from -90 to 90 and longitude from -180 to 180.', 'branch-locator'));
+        add_settings_error('bl_locator_map_settings', 'invalid_map_center', __('Map center coordinates are out of range; enter a latitude from -90 to 90 and longitude from -180 to 180.', 'branch-locator-map'));
         $center_lat = null;
         $center_lng = null;
     }
     if (($center_lat === null) !== ($center_lng === null)) {
-        add_settings_error('bl_locator_map_settings', 'incomplete_map_center', __('Enter both map center coordinates or leave both blank.', 'branch-locator'));
+        add_settings_error('bl_locator_map_settings', 'incomplete_map_center', __('Enter both map center coordinates or leave both blank.', 'branch-locator-map'));
         $center_lat = null;
         $center_lng = null;
     }
     if ($zoom !== null) {
         if ($zoom < 1 || $zoom > 20) {
-            add_settings_error('bl_locator_map_settings', 'invalid_map_zoom', __('Map zoom must be between 1 and 20; the value was adjusted to that range.', 'branch-locator'));
+            add_settings_error('bl_locator_map_settings', 'invalid_map_zoom', __('Map zoom must be between 1 and 20; the value was adjusted to that range.', 'branch-locator-map'));
         }
         $zoom = max(1, min(20, $zoom));
     }
     if ($styles !== '') {
         $decoded_styles = json_decode($styles);
         if (!is_array($decoded_styles)) {
-            add_settings_error('bl_locator_map_settings', 'invalid_google_styles', __('Google Maps styles must be valid JSON.', 'branch-locator'));
+            add_settings_error('bl_locator_map_settings', 'invalid_google_styles', __('Google Maps styles must be valid JSON.', 'branch-locator-map'));
             $previous = get_option('bl_locator_map_settings', $defaults);
             $styles = is_array($previous) && isset($previous['google_styles']) ? $previous['google_styles'] : '';
         }
@@ -136,7 +131,7 @@ function bl_locator_sanitize_map_settings($settings) {
         $decoded_area = json_decode($area, true);
         if (!is_array($decoded_area) || !isset($decoded_area['type'], $decoded_area['features'])
             || $decoded_area['type'] !== 'FeatureCollection' || !is_array($decoded_area['features'])) {
-            add_settings_error('bl_locator_map_settings', 'invalid_service_area', __('Service area must be valid GeoJSON generated by the drawing tool.', 'branch-locator'));
+            add_settings_error('bl_locator_map_settings', 'invalid_service_area', __('Service area must be valid GeoJSON generated by the drawing tool.', 'branch-locator-map'));
             $previous = get_option('bl_locator_map_settings', $defaults);
             $area = is_array($previous) && isset($previous['service_area']) ? $previous['service_area'] : '';
         }
@@ -175,8 +170,8 @@ function bl_locator_get_map_settings() {
 
 function bl_locator_register_settings_menu() {
     add_options_page(
-        __('Branch Locator Settings', 'branch-locator'),
-        __('Branch Locator', 'branch-locator'),
+        __('Branch Locator Settings', 'branch-locator-map'),
+        __('Branch Locator', 'branch-locator-map'),
         'manage_options',
         'branch-locator-settings',
         'bl_locator_settings_page'
@@ -196,52 +191,52 @@ function bl_locator_settings_page() {
         : '';
     ?>
     <div class="wrap">
-        <h1><?php echo esc_html__('Branch Locator Settings', 'branch-locator'); ?></h1>
-        <p><?php echo esc_html__('A Google Maps API key is optional for OpenStreetMap and required only when you select Google Maps. A key defined in wp-config.php takes priority over the key entered here.', 'branch-locator'); ?></p>
+        <h1><?php echo esc_html__('Branch Locator Settings', 'branch-locator-map'); ?></h1>
+        <p><?php echo esc_html__('A Google Maps API key is optional for OpenStreetMap and required only when you select Google Maps. A key defined in wp-config.php takes priority over the key entered here.', 'branch-locator-map'); ?></p>
         <?php if ($constant_key !== '') : ?>
-            <div class="notice notice-info inline"><p><?php echo esc_html__('A key is defined in wp-config.php and will take priority over the key entered below.', 'branch-locator'); ?></p></div>
+            <div class="notice notice-info inline"><p><?php echo esc_html__('A key is defined in wp-config.php and will take priority over the key entered below.', 'branch-locator-map'); ?></p></div>
         <?php endif; ?>
         <form method="post" action="options.php">
             <?php settings_fields('bl_locator_settings_group'); ?>
-            <h2><?php echo esc_html__('Map settings', 'branch-locator'); ?></h2>
+            <h2><?php echo esc_html__('Map settings', 'branch-locator-map'); ?></h2>
             <table class="form-table" role="presentation">
                 <tr>
-                    <th scope="row"><label for="bl_locator_map_provider"><?php echo esc_html__('Map provider', 'branch-locator'); ?></label></th>
+                    <th scope="row"><label for="bl_locator_map_provider"><?php echo esc_html__('Map provider', 'branch-locator-map'); ?></label></th>
                     <td>
                         <select id="bl_locator_map_provider" name="bl_locator_map_settings[provider]">
-                            <option value="osm" <?php selected($map_settings['provider'], 'osm'); ?>><?php echo esc_html__('OpenStreetMap', 'branch-locator'); ?></option>
-                            <option value="google" <?php selected($map_settings['provider'], 'google'); ?>><?php echo esc_html__('Google Maps', 'branch-locator'); ?></option>
+                            <option value="osm" <?php selected($map_settings['provider'], 'osm'); ?>><?php echo esc_html__('OpenStreetMap', 'branch-locator-map'); ?></option>
+                            <option value="google" <?php selected($map_settings['provider'], 'google'); ?>><?php echo esc_html__('Google Maps', 'branch-locator-map'); ?></option>
                         </select>
-                        <p class="description"><?php echo esc_html__('OpenStreetMap is the default and does not require an API key. Google Maps requires the API key entered below.', 'branch-locator'); ?></p>
+                        <p class="description"><?php echo esc_html__('OpenStreetMap is the default and does not require an API key. Google Maps requires the API key entered below.', 'branch-locator-map'); ?></p>
                     </td>
                 </tr>
                 <tr>
-                    <th scope="row"><?php echo esc_html__('Initial map center', 'branch-locator'); ?></th>
+                    <th scope="row"><?php echo esc_html__('Initial map center', 'branch-locator-map'); ?></th>
                     <td>
-                        <label><?php echo esc_html__('Latitude', 'branch-locator'); ?>
+                        <label><?php echo esc_html__('Latitude', 'branch-locator-map'); ?>
                             <input type="number" step="any" min="-90" max="90" name="bl_locator_map_settings[center_lat]" value="<?php echo esc_attr($map_settings['center_lat']); ?>" class="small-text" />
                         </label>
-                        <label><?php echo esc_html__('Longitude', 'branch-locator'); ?>
+                        <label><?php echo esc_html__('Longitude', 'branch-locator-map'); ?>
                             <input type="number" step="any" min="-180" max="180" name="bl_locator_map_settings[center_lng]" value="<?php echo esc_attr($map_settings['center_lng']); ?>" class="small-text" />
                         </label>
-                        <label><?php echo esc_html__('Zoom (1–20)', 'branch-locator'); ?>
+                        <label><?php echo esc_html__('Zoom (1–20)', 'branch-locator-map'); ?>
                             <input type="number" min="1" max="20" name="bl_locator_map_settings[zoom]" value="<?php echo esc_attr($map_settings['zoom']); ?>" class="small-text" />
                         </label>
                     </td>
                 </tr>
                 <tr class="bl-google-settings">
-                    <th scope="row"><label for="bl_locator_google_styles"><?php echo esc_html__('Google Maps styles (JSON)', 'branch-locator'); ?></label></th>
+                    <th scope="row"><label for="bl_locator_google_styles"><?php echo esc_html__('Google Maps styles (JSON)', 'branch-locator-map'); ?></label></th>
                     <td>
                         <textarea id="bl_locator_google_styles" name="bl_locator_map_settings[google_styles]" rows="8" class="large-text code"><?php echo esc_textarea($map_settings['google_styles']); ?></textarea>
-                        <p class="description"><?php echo esc_html__('Optional Google Maps style JSON array. Ignored when OpenStreetMap is selected.', 'branch-locator'); ?></p>
+                        <p class="description"><?php echo esc_html__('Optional Google Maps style JSON array. Ignored when OpenStreetMap is selected.', 'branch-locator-map'); ?></p>
                     </td>
                 </tr>
             </table>
-            <h3><?php echo esc_html__('Service area', 'branch-locator'); ?></h3>
-            <p><?php echo esc_html__('Use the polygon drawing toolbar to define the service area. The saved area is shown on the public map.', 'branch-locator'); ?></p>
+            <h3><?php echo esc_html__('Service area', 'branch-locator-map'); ?></h3>
+            <p><?php echo esc_html__('Use the polygon drawing toolbar to define the service area. The saved area is shown on the public map.', 'branch-locator-map'); ?></p>
             <div id="bl-locator-area-editor" style="width:100%;max-width:900px;height:360px;background:#eee;"></div>
-            <textarea id="bl_locator_service_area" name="bl_locator_map_settings[service_area]" class="large-text code" rows="4" aria-label="<?php echo esc_attr__('Service area GeoJSON', 'branch-locator'); ?>"><?php echo esc_textarea($map_settings['service_area']); ?></textarea>
-            <p><button type="button" class="button" id="bl-locator-area-clear"><?php echo esc_html__('Clear service area', 'branch-locator'); ?></button></p>
+            <textarea id="bl_locator_service_area" name="bl_locator_map_settings[service_area]" class="large-text code" rows="4" aria-label="<?php echo esc_attr__('Service area GeoJSON', 'branch-locator-map'); ?>"><?php echo esc_textarea($map_settings['service_area']); ?></textarea>
+            <p><button type="button" class="button" id="bl-locator-area-clear"><?php echo esc_html__('Clear service area', 'branch-locator-map'); ?></button></p>
             <script>
             (function () {
                 const provider = document.getElementById('bl_locator_map_provider');
@@ -262,7 +257,7 @@ function bl_locator_settings_page() {
                 });
                 if (!editor) return;
                 if (!window.L || !L.Control || !L.Control.Draw) {
-                    editor.textContent = <?php echo wp_json_encode(__('The service-area drawing tools could not be loaded. You can still add markers and save other settings.', 'branch-locator')); ?>;
+                    editor.textContent = <?php echo wp_json_encode(__('The service-area drawing tools could not be loaded. You can still add markers and save other settings.', 'branch-locator-map')); ?>;
                     return;
                 }
                 const center = [
@@ -280,7 +275,7 @@ function bl_locator_settings_page() {
                         saved.eachLayer(function (layer) { drawnItems.addLayer(layer); });
                     }
                 } catch (error) {
-                    areaField.setCustomValidity(<?php echo wp_json_encode(__('The saved service area is invalid GeoJSON. Clear it or redraw the area.', 'branch-locator')); ?>);
+                    areaField.setCustomValidity(<?php echo wp_json_encode(__('The saved service area is invalid GeoJSON. Clear it or redraw the area.', 'branch-locator-map')); ?>);
                 }
                 areaMap.addControl(new L.Control.Draw({
                     edit: { featureGroup: drawnItems },
@@ -307,7 +302,7 @@ function bl_locator_settings_page() {
             <table class="form-table" role="presentation">
                 <tr>
                     <th scope="row">
-                        <label for="bl_locator_google_maps_api_key"><?php echo esc_html__('Google Maps API key', 'branch-locator'); ?></label>
+                        <label for="bl_locator_google_maps_api_key"><?php echo esc_html__('Google Maps API key', 'branch-locator-map'); ?></label>
                     </th>
                     <td>
                         <input
@@ -319,12 +314,12 @@ function bl_locator_settings_page() {
                             autocomplete="new-password"
                             spellcheck="false"
                         />
-                        <p class="description"><?php echo esc_html__('For Google Maps, enable Maps JavaScript API and Geocoding API in Google Cloud. Restrict this key to your website HTTP referrers.', 'branch-locator'); ?></p>
+                        <p class="description"><?php echo esc_html__('For Google Maps, enable Maps JavaScript API and Geocoding API in Google Cloud. Restrict this key to your website HTTP referrers.', 'branch-locator-map'); ?></p>
                     </td>
                 </tr>
             </table>
-            <h2><?php echo esc_html__('Branches', 'branch-locator'); ?></h2>
-            <p><?php echo esc_html__('Add as many marker locations as needed. For OpenStreetMap, enter latitude and longitude for each marker. Each marker can have translations and a custom icon.', 'branch-locator'); ?></p>
+            <h2><?php echo esc_html__('Branches', 'branch-locator-map'); ?></h2>
+            <p><?php echo esc_html__('Add as many marker locations as needed. For OpenStreetMap, enter latitude and longitude for each marker. Each marker can have translations and a custom icon.', 'branch-locator-map'); ?></p>
             <input type="hidden" name="bl_locator_branches[__empty]" value="" />
             <div id="bl-locator-branches">
                 <?php foreach ($saved_branches as $index => $branch) : ?>
@@ -332,10 +327,10 @@ function bl_locator_settings_page() {
                 <?php endforeach; ?>
             </div>
             <p>
-                <button type="button" class="button" id="bl-locator-add-branch"><?php echo esc_html__('Add branch', 'branch-locator'); ?></button>
-                <button type="button" class="button" id="bl-locator-remove-all-branches"><?php echo esc_html__('Remove all markers', 'branch-locator'); ?></button>
+                <button type="button" class="button" id="bl-locator-add-branch"><?php echo esc_html__('Add branch', 'branch-locator-map'); ?></button>
+                <button type="button" class="button" id="bl-locator-remove-all-branches"><?php echo esc_html__('Remove all markers', 'branch-locator-map'); ?></button>
             </p>
-            <p class="description"><?php echo esc_html__('Use [branch_locator] on any page, post, or custom post type. Optional attributes: provider="osm|google", lang="fr", zoom="12", center_lat="48.8566", center_lng="2.3522", height="600px".', 'branch-locator'); ?></p>
+            <p class="description"><?php echo esc_html__('Use [branch_locator] on any page, post, or custom post type. Optional attributes: provider="osm|google", lang="fr", zoom="12", center_lat="48.8566", center_lng="2.3522", height="600px".', 'branch-locator-map'); ?></p>
             <template id="bl-locator-branch-template">
                 <?php bl_locator_render_branch_row(array(), '__INDEX__'); ?>
             </template>
@@ -394,8 +389,8 @@ function bl_locator_settings_page() {
             if (iconButton && window.wp && wp.media) {
                 const branch = iconButton.closest('.bl-locator-branch');
                 const frame = wp.media({
-                    title: <?php echo wp_json_encode(__('Choose marker icon', 'branch-locator')); ?>,
-                    button: { text: <?php echo wp_json_encode(__('Use marker icon', 'branch-locator')); ?> },
+                    title: <?php echo wp_json_encode(__('Choose marker icon', 'branch-locator-map')); ?>,
+                    button: { text: <?php echo wp_json_encode(__('Use marker icon', 'branch-locator-map')); ?> },
                     multiple: false,
                     library: { type: 'image' }
                 });
@@ -445,40 +440,44 @@ function bl_locator_render_branch_row($branch, $index) {
     ?>
     <fieldset class="bl-locator-branch" data-branch-index="<?php echo esc_attr($index); ?>" data-next-translation="<?php echo esc_attr(count($translations)); ?>">
         <legend>
-            <strong><?php echo esc_html(sprintf(__('Branch %s', 'branch-locator'), is_numeric($index) ? ((int) $index + 1) : '')); ?></strong>
-            <button type="button" class="button-link-delete bl-locator-remove-branch"><?php echo esc_html__('Remove', 'branch-locator'); ?></button>
+            <strong><?php echo esc_html(sprintf(
+                /* translators: %s: branch number. */
+                __('Branch %s', 'branch-locator-map'),
+                is_numeric($index) ? ((int) $index + 1) : ''
+            )); ?></strong>
+            <button type="button" class="button-link-delete bl-locator-remove-branch"><?php echo esc_html__('Remove', 'branch-locator-map'); ?></button>
         </legend>
         <div class="bl-locator-translations">
             <?php foreach ($translations as $translation_index => $translation) :
                 bl_locator_render_translation_row($translation, $index, $translation_index);
             endforeach; ?>
         </div>
-        <p><button type="button" class="button bl-locator-add-translation"><?php echo esc_html__('Add language translation', 'branch-locator'); ?></button></p>
+        <p><button type="button" class="button bl-locator-add-translation"><?php echo esc_html__('Add language translation', 'branch-locator-map'); ?></button></p>
         <p>
             <label>
-                <?php echo esc_html__('Phone', 'branch-locator'); ?><br />
+                <?php echo esc_html__('Phone', 'branch-locator-map'); ?><br />
                 <input type="tel" name="bl_locator_branches[<?php echo esc_attr($index); ?>][phone]" value="<?php echo esc_attr(isset($branch['phone']) ? $branch['phone'] : ''); ?>" class="regular-text" />
             </label>
         </p>
         <p>
             <label>
-                <?php echo esc_html__('Google Maps directions URL (optional)', 'branch-locator'); ?><br />
+                <?php echo esc_html__('Google Maps directions URL (optional)', 'branch-locator-map'); ?><br />
                 <input type="url" name="bl_locator_branches[<?php echo esc_attr($index); ?>][map_url]" value="<?php echo esc_attr(isset($branch['map_url']) ? $branch['map_url'] : ''); ?>" class="regular-text" />
             </label>
         </p>
         <p>
-            <label><?php echo esc_html__('Marker latitude', 'branch-locator'); ?>
+            <label><?php echo esc_html__('Marker latitude', 'branch-locator-map'); ?>
                 <input type="number" step="any" min="-90" max="90" name="bl_locator_branches[<?php echo esc_attr($index); ?>][lat]" value="<?php echo esc_attr(isset($branch['lat']) ? $branch['lat'] : ''); ?>" class="small-text" />
             </label>
-            <label><?php echo esc_html__('Marker longitude', 'branch-locator'); ?>
+            <label><?php echo esc_html__('Marker longitude', 'branch-locator-map'); ?>
                 <input type="number" step="any" min="-180" max="180" name="bl_locator_branches[<?php echo esc_attr($index); ?>][lng]" value="<?php echo esc_attr(isset($branch['lng']) ? $branch['lng'] : ''); ?>" class="small-text" />
             </label>
         </p>
         <p>
-            <label><?php echo esc_html__('Custom marker icon URL', 'branch-locator'); ?><br />
+            <label><?php echo esc_html__('Custom marker icon URL', 'branch-locator-map'); ?><br />
                 <input type="url" name="bl_locator_branches[<?php echo esc_attr($index); ?>][icon]" value="<?php echo esc_attr(isset($branch['icon']) ? $branch['icon'] : ''); ?>" class="regular-text bl-locator-marker-icon" />
             </label>
-            <button type="button" class="button bl-locator-select-icon"><?php echo esc_html__('Choose image', 'branch-locator'); ?></button>
+            <button type="button" class="button bl-locator-select-icon"><?php echo esc_html__('Choose image', 'branch-locator-map'); ?></button>
             <img class="bl-locator-icon-preview" src="<?php echo esc_url(isset($branch['icon']) ? $branch['icon'] : ''); ?>" alt="" style="max-width:32px;max-height:32px;vertical-align:middle;" <?php echo empty($branch['icon']) ? 'hidden' : ''; ?> />
         </p>
     </fieldset>
@@ -487,9 +486,9 @@ function bl_locator_render_branch_row($branch, $index) {
 
 function bl_locator_render_translation_row($translation, $branch_index, $translation_index) {
     $fields = array(
-        'language' => __('Language code (for example, fr or zh-CN)', 'branch-locator'),
-        'name' => __('Branch name', 'branch-locator'),
-        'address' => __('Address', 'branch-locator'),
+        'language' => __('Language code (for example, fr or zh-CN)', 'branch-locator-map'),
+        'name' => __('Branch name', 'branch-locator-map'),
+        'address' => __('Address', 'branch-locator-map'),
     );
     ?>
     <div class="bl-locator-translation">
@@ -508,7 +507,7 @@ function bl_locator_render_translation_row($translation, $branch_index, $transla
                 />
             </label>
         <?php endforeach; ?>
-        <button type="button" class="button-link-delete bl-locator-remove-translation"><?php echo esc_html__('Remove translation', 'branch-locator'); ?></button>
+        <button type="button" class="button-link-delete bl-locator-remove-translation"><?php echo esc_html__('Remove translation', 'branch-locator-map'); ?></button>
     </div>
     <?php
 }
@@ -540,7 +539,7 @@ function bl_locator_normalize_branches($branches) {
                     : '';
                 if (!preg_match('/^[a-z]{2,3}(?:-[a-z0-9]{2,8})*$/', $language)) {
                     if (!empty($translation['language']) || !empty($translation['name']) || !empty($translation['address'])) {
-                        add_settings_error('bl_locator_branches', 'invalid_branch_language', __('A branch translation was skipped because its language code is invalid.', 'branch-locator'));
+                        add_settings_error('bl_locator_branches', 'invalid_branch_language', __('A branch translation was skipped because its language code is invalid.', 'branch-locator-map'));
                     }
                     continue;
                 }
@@ -552,7 +551,7 @@ function bl_locator_normalize_branches($branches) {
                     : '';
                 if ($name === '' || $address === '') {
                     if ($name !== '' || $address !== '') {
-                        add_settings_error('bl_locator_branches', 'incomplete_branch_translation', __('Each branch translation needs both a name and an address.', 'branch-locator'));
+                        add_settings_error('bl_locator_branches', 'incomplete_branch_translation', __('Each branch translation needs both a name and an address.', 'branch-locator-map'));
                     }
                     continue;
                 }
@@ -594,7 +593,7 @@ function bl_locator_normalize_branches($branches) {
         $valid_lat = $has_lat && is_numeric($branch['lat']) && (float) $branch['lat'] >= -90 && (float) $branch['lat'] <= 90;
         $valid_lng = $has_lng && is_numeric($branch['lng']) && (float) $branch['lng'] >= -180 && (float) $branch['lng'] <= 180;
         if (($has_lat || $has_lng) && (!$valid_lat || !$valid_lng)) {
-            add_settings_error('bl_locator_branches', 'invalid_branch_coordinates', __('A marker needs both valid coordinates: latitude -90 to 90 and longitude -180 to 180. The address will be used as a fallback where supported.', 'branch-locator'));
+            add_settings_error('bl_locator_branches', 'invalid_branch_coordinates', __('A marker needs both valid coordinates: latitude -90 to 90 and longitude -180 to 180. The address will be used as a fallback where supported.', 'branch-locator-map'));
         }
 
         $first_translation = reset($translations);
@@ -729,21 +728,21 @@ function bl_locator_shortcode($atts = array()) {
     $id = function_exists('wp_unique_id') ? wp_unique_id('bl-locator-') : ('bl-locator-' . wp_rand(1000, 999999));
     $branches = bl_get_branches($lang);
     $labels = array(
-        'heading' => __('Our Branches', 'branch-locator'),
-        'address' => __('Address', 'branch-locator'),
-        'phone' => __('Phone', 'branch-locator'),
-        'directions' => __('Get directions', 'branch-locator'),
-        'map_error' => __('The map could not be loaded. Please try again later.', 'branch-locator'),
-        'key_error' => __('The Google Maps API key has not been configured.', 'branch-locator'),
-        'loading' => __('Loading map…', 'branch-locator'),
-        'branch_list' => __('All branches', 'branch-locator'),
-        'no_branches' => __('No branches have been added.', 'branch-locator'),
-        'data_error' => __('Branch locator data could not be loaded.', 'branch-locator'),
-        'reset' => __('Reset map', 'branch-locator'),
-        'locate' => __('Use my location', 'branch-locator'),
-        'clear_markers' => __('Remove markers', 'branch-locator'),
-        'location_error' => __('Your location could not be determined.', 'branch-locator'),
-        'osm_coordinates_error' => __('OpenStreetMap markers need latitude and longitude. Add coordinates in Branch Locator settings.', 'branch-locator'),
+        'heading' => __('Our Branches', 'branch-locator-map'),
+        'address' => __('Address', 'branch-locator-map'),
+        'phone' => __('Phone', 'branch-locator-map'),
+        'directions' => __('Get directions', 'branch-locator-map'),
+        'map_error' => __('The map could not be loaded. Please try again later.', 'branch-locator-map'),
+        'key_error' => __('The Google Maps API key has not been configured.', 'branch-locator-map'),
+        'loading' => __('Loading map…', 'branch-locator-map'),
+        'branch_list' => __('All branches', 'branch-locator-map'),
+        'no_branches' => __('No branches have been added.', 'branch-locator-map'),
+        'data_error' => __('Branch locator data could not be loaded.', 'branch-locator-map'),
+        'reset' => __('Reset map', 'branch-locator-map'),
+        'locate' => __('Use my location', 'branch-locator-map'),
+        'clear_markers' => __('Remove markers', 'branch-locator-map'),
+        'location_error' => __('Your location could not be determined.', 'branch-locator-map'),
+        'osm_coordinates_error' => __('OpenStreetMap markers need latitude and longitude. Add coordinates in Branch Locator settings.', 'branch-locator-map'),
     );
 
     $data = array(
@@ -752,6 +751,8 @@ function bl_locator_shortcode($atts = array()) {
         'labels' => $labels,
         'branches' => $branches,
         'apiKey' => $api_key,
+        'leafletCssUrl' => plugins_url('assets/vendor/leaflet/leaflet.css', __FILE__),
+        'leafletScriptUrl' => plugins_url('assets/vendor/leaflet/leaflet.js', __FILE__),
         'center' => $center_lat === null ? null : array($center_lat, $center_lng),
         'zoom' => $zoom,
         'googleStyles' => json_decode($map_settings['google_styles'], true),
@@ -1050,11 +1051,11 @@ function bl_locator_shortcode($atts = array()) {
                         const style = document.createElement('link');
                         style.id = 'bl-leaflet-frontend-css';
                         style.rel = 'stylesheet';
-                        style.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+                        style.href = config.leafletCssUrl;
                         document.head.appendChild(style);
                     }
                     const script = document.createElement('script');
-                    script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+                    script.src = config.leafletScriptUrl;
                     script.onload = resolve;
                     script.onerror = reject;
                     document.head.appendChild(script);

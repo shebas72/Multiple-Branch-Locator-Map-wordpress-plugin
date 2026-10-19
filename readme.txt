@@ -3,7 +3,8 @@ Contributors: shebas-khan
 Tags: map, maps, branch locator, locations, openstreetmap
 Requires at least: 5.8
 Requires PHP: 7.4
-Stable tag: 1.2.0
+Tested up to: 7.1
+Stable tag: 1.2.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -37,7 +38,7 @@ Locations and map configuration are stored in WordPress options. No business loc
 
 == Installation ==
 
-1. Upload the `branch-locator` folder to `/wp-content/plugins/`, or install the plugin ZIP through **Plugins > Add New > Upload Plugin**.
+1. Upload the `branch-locator-map` folder to `/wp-content/plugins/`, or install the plugin ZIP through **Plugins > Add New > Upload Plugin**.
 2. Activate **Branch Locator Map** from the **Plugins** screen.
 3. Open **Settings > Branch Locator**.
 4. Select OpenStreetMap or Google Maps.
@@ -77,9 +78,9 @@ The service-area drawing tool creates a polygon. It does not calculate delivery 
 
 == Map providers and third-party services ==
 
-OpenStreetMap maps use Leaflet and OpenStreetMap's standard tile service. The map includes the required OpenStreetMap attribution. Leaflet is loaded from the unpkg CDN only on pages where an OpenStreetMap shortcode is rendered. The standard public tile service is subject to the OpenStreetMap tile usage policy and is not a guaranteed high-volume or commercial tile-hosting service. Sites with substantial traffic should use a tile provider appropriate to their usage.
+OpenStreetMap maps use the locally bundled Leaflet library and OpenStreetMap's standard tile service. The map includes the required OpenStreetMap attribution. The standard public tile service is subject to the OpenStreetMap tile usage policy and is not a guaranteed high-volume or commercial tile-hosting service. Sites with substantial traffic should use a tile provider appropriate to their usage.
 
-The service-area editor uses Leaflet Draw, loaded from the unpkg CDN on the plugin settings page. Google Maps loads Google's Maps JavaScript API when a Google map is displayed. These third-party services receive normal browser requests from visitors viewing the map; their availability and terms are controlled by their respective providers.
+The service-area editor uses locally bundled Leaflet and Leaflet Draw libraries on the plugin settings page. Google Maps loads Google's Maps JavaScript API when a Google map is displayed. Map providers receive normal browser requests from visitors viewing the map; their availability and terms are controlled by their respective providers.
 
 == Privacy ==
 
@@ -117,6 +118,11 @@ Browser geolocation requires visitor permission and is generally available only 
 
 == Changelog ==
 
+= 1.2.1 =
+* Bundled Leaflet and Leaflet Draw locally instead of loading library assets from a CDN.
+* Matched the translation text domain to the plugin slug.
+* Declared compatibility through WordPress 7.1.
+
 = 1.2.0 =
 * Added OpenStreetMap and Google Maps provider selection.
 * Added marker coordinates, custom icons, map center and zoom settings, and Google Maps styling.
@@ -133,3 +139,6 @@ Browser geolocation requires visitor permission and is generally available only 
 
 = 1.2.0 =
 Adds OpenStreetMap support, marker coordinates and icons, map controls, and multilingual shortcode options.
+
+= 1.2.1 =
+Bundles map libraries locally and updates plugin compatibility metadata.
