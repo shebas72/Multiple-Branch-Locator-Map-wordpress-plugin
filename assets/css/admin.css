@@ -1,0 +1,35 @@
+#bl-locator-area-editor {
+    width: 100%;
+    max-width: 900px;
+    height: 360px;
+    background: #eee;
+}
+
+.bl-locator-branch {
+    max-width: 900px;
+    margin: 16px 0;
+    padding: 16px;
+    border: 1px solid #c3c4c7;
+}
+
+.bl-locator-translations {
+    display: grid;
+    gap: 12px;
+}
+
+.bl-locator-translation {
+    display: grid;
+    grid-template-columns: minmax(100px, 0.5fr) repeat(2, minmax(200px, 1fr)) auto;
+    gap: 12px;
+    align-items: end;
+}
+
+.bl-locator-translation input {
+    width: 100%;
+}
+
+@media (max-width: 782px) {
+    .bl-locator-translation {
+        grid-template-columns: 1fr;
+    }
+}
